@@ -11,7 +11,7 @@
 *  Indexes structure ==> using ranks ad keys maintaining functions by update right.size & left.size fields in nodes.
 """
 
-"""A class representing a node in an AVL tree"""
+"""A class representing a node in an AVL tree1"""
 
 class AVLNode(object):
 	"""Constructor, you are allowed to add more fields.
