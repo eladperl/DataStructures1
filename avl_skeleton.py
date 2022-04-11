@@ -26,7 +26,7 @@ class AVLNode(object):
 		self.parent = None
 		self.height = -1
 		### More fields ###
-		self.size = None                     # Temp' - might define different
+		self.size = 1                    # Temp' - might define different
 		self.rank = None                     # Temp' - might define different
 
 	"""returns the left child
@@ -135,7 +135,8 @@ class AVLTreeList(object):
 	def __init__(self):
 		self.root = None
 		self.size = 0
-
+		self.first = None
+		self.last = None
 
 
 	"""returns whether the list is empty
@@ -158,14 +159,17 @@ class AVLTreeList(object):
 	@returns: the the value of the i'th item in the list
 	"""
 	def retrieve(self, i):
-		pos = self.root
-		curr_rank = self.root.rank
-		while curr_rank != i:
-			if i < curr_rank:
-				pos = pos.getLeft()
+		def retrieve_rec(node, i):
+			rank = node.left.size + 1
+			if rank == i:
+				return node.value
+			if i < rank:
+				return retrieve_rec(node.getLeft(), i)
 			else:
-				pos = pos.getRight()
-		return curr_rank
+				return retrieve_rec(node.getLeft(), i-rank)
+
+		return retrieve_rec(self.root, i + 1).value
+
 
 	"""inserts val at position i in the list
 
@@ -178,6 +182,50 @@ class AVLTreeList(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def insert(self, i, val):
+		elem = AVLNode(val)
+		def retrieve_rec(node, i):
+			rank = node.left.size + 1
+			if rank == i:
+				return node
+			if i < rank:
+				return retrieve_rec(node.getLeft(), i)
+			else:
+				return retrieve_rec(node.getLeft(), i-rank)
+		pos = retrieve_rec(self.root, i+1)
+		if pos.left.isRealNode():
+			elem.left = pos.left
+			elem.left.parent = elem
+			pos.left = elem
+			elem.parent = pos
+			elem.right = AVLNode("virtual")
+			elem.right.parent = pos
+			elem.right.size = 0
+
+		else:
+			pos = pos.left
+			while pos.value != "virtual":
+				pos = pos.right
+			elem.parent = pos.parent
+			elem.parent.right = elem
+			elem.right = pos
+			pos.parent = elem
+			elem.left = elem.left = AVLNode("virtual")
+			elem.left.size = 0
+
+		"""if self.empty():
+			self.root = AVLNode(val)
+			self.root.rank = i+1
+			self.root.left = AVLNode("virtual")
+			self.root.right = AVLNode("virtual")
+		else:
+			pos = self.root
+			curr_rank = self.root.rank
+			while curr_rank != i:
+				if i < curr_rank-1:
+					pos = pos.getLeft()
+				else:
+					pos = pos.getRight()
+			"""
 		return -1
 
 
