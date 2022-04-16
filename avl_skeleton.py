@@ -130,6 +130,7 @@ class AVLNode(object):
     def setSize(self, s):
         self.size = s
 
+
     def BFcalc(self):
         return (lambda n: n.getLeft().getHeight() - n.getRight().getHeight())(self)
 
@@ -216,6 +217,11 @@ class AVLTreeList(object):
             pos = self.appendNode(elem)
         else:
             pos = self.setNode(elem, i)    # Select(self, i+1) == self[i] ==> find the node located in index i
+        #print("\n#############################################################\n"
+         #     "             START INSERT        \n#####################################################\n")
+        #print("before rotate")
+        #self.printTree()
+        #self.lstDetails()
         elem.setParent(pos)
         self.size += 1
         #counter = self.fixUp(pos, False)
@@ -228,23 +234,42 @@ class AVLTreeList(object):
                 counter += 1
                 if bf == -2 and pos.getRight().BFcalc() == -1:
                     self.rotateLeft(pos, pos.getRight())
+                    #print("after rotate left")
+                    #self.printTree()
+                    #self.lstDetails()
                     counter += 1
                 elif bf == -2 and pos.getRight().BFcalc() == 1:
                     self.rotateRight(pos.getRight(), pos.getRight().getLeft())
+                    #print("after rotate right 1")
+                    #self.printTree()
+                    #self.lstDetails()
                     self.rotateLeft(pos, pos.getRight())
+                    #print("after rotate left 2")
+                    #self.printTree()
+                    #self.lstDetails()
                     counter += 2
                 elif bf == 2 and pos.getLeft().BFcalc() == 1:
                     self.rotateRight(pos, pos.getLeft())
+                    #print("after rotate right")
+                    #self.printTree()
+                    #self.lstDetails()
                     counter += 1
                 elif bf == 2 and pos.getLeft().BFcalc() == -1:
                     self.rotateLeft(pos.getLeft(), pos.getLeft().getRight())
+                    #print("after rotate left 1")
+                    #self.printTree()
+                    #self.lstDetails()
                     self.rotateRight(pos, pos.getLeft())
+                    #print("after rotate right 2")
+                    #self.printTree()
+                    #self.lstDetails()
                     counter += 2
                 pos = temp
 
             else:
                 pos = pos.parent
-
+        #print("\n#############################################################\n            END                \n"
+         #     "###################################################\n\n")
         return counter
 
     def initNode(self, val):
@@ -298,10 +323,11 @@ class AVLTreeList(object):
             else:
                 r.getParent().setLeft(r)
         # Fix size & height
-        u.size = u.getLeft().size + u.getRight().size + 1
-        u.setHeight((max(u.getRight().getHeight(), u.getLeft().getHeight()) + 1))
-        r.size = r.getLeft().size + r.getRight().size + 1
-        r.setHeight((max(r.getRight().getHeight(), r.getLeft().getHeight()) + 1))
+        u.setSize(u.sUpdate())
+        u.setHeight(u.hUpdate())
+        r.setSize(r.sUpdate())
+        r.setHeight(r.hUpdate())
+        #print(u.height, r.height)
 
     def rotateRight(self, u, l):
         u.setLeft(l.getRight())
@@ -316,10 +342,16 @@ class AVLTreeList(object):
                 l.getParent().setLeft(l)
             else:
                 l.getParent().setRight(l)
+        """print([["u.left.height: "+str(u.getLeft().getHeight())],["u.height: "+str(max(u.getLeft().getHeight(),u.getRight().getHeight())+1)],
+               ["u.right.height: "+str(u.getRight().getHeight())]])"""
         u.setSize(u.sUpdate())
         u.setHeight(u.hUpdate())
         l.setSize(l.sUpdate())
-        l.setHeight(u.hUpdate())
+        """print([["l.left.height: " + str(l.getLeft().getHeight())],
+               ["l.height: " + str(max(l.getLeft().getHeight() , l.getRight().getHeight()) + 1)],
+               ["l.right.height: " + str(l.getRight().getHeight())]])"""
+        l.setHeight(l.hUpdate())
+
 
     def fixUp(self, pos, insert=True):
         counter = 0
@@ -412,7 +444,7 @@ class AVLTreeList(object):
             self.root = None
         return counter
 
-    def deleteLeaf(self, dNode):  # not possible- case 2 and dNode == root
+    def deleteLeaf(self, dNode):
         dnp = dNode.getParent()
         if dNode is not self.root:
             if dnp.getRight() is dNode:
@@ -577,29 +609,22 @@ class AVLTreeList(object):
     @returns: True if the AVL tree properties are consistent
     """
 
+
+
     def check(self, name):
-        print("Checks AVL's tree properties test(input=#", name, "#):")
+        pt = True
         if not self.isAVL():
             print("The tree is not an AVL tree!")
-        else:
-            print("Test 1 ==> Good!")
+            pt = False
         if not self.isSizeConsistent():
             print("The sizes of the tree nodes are inconsistent!")
-        else:
-            print("Test 2 ==> Good!")
+            pt = False
         if not self.isHeightConsistent():
             print("The heights of the tree nodes are inconsistent!")
-        else:
-            print("Test 3 ==> Good!")
-        lst = self.nodes()
-        rankT = True
-        for i in range(self.size):
-            if lst[i] != self.retrieve_rec(self.root, i + 1):
-                rankT = False
-        if rankT:
-            print("Test 4 ==> Good!\n")
-        else:
-            print("The ranks of the tree nodes are inconsistent!\n")
+            pt = False
+
+        return pt
+
 
     # if not self.isRankConsistent():
     # print("The ranks of the tree nodes are inconsistent!")
@@ -611,6 +636,10 @@ class AVLTreeList(object):
     """
 
     def isAVL(self):
+        if self.root is None and self.size !=0:
+            print("XXX :ERROR: isAVL() --> self.root is None and self.size !=0")
+        if self.size == 0:
+            return True
         return self.isAVLRec(self.getRoot())
 
     """Checks if the subtree is an AVL
@@ -627,6 +656,7 @@ class AVLTreeList(object):
         # Check abs(balance factor) <= 1
         bf = (lambda n: n.getLeft().getHeight() - n.getRight().getHeight())(x)
         if bf > 1 or bf < -1:
+            print("Criminal BF -----> XXXXXXXXX  "+x.getValue()+"  XXXXXXXXXX")
             return False
         # Recursive calls
         return self.isAVLRec(x.getLeft()) and self.isAVLRec(x.getRight())
@@ -638,6 +668,8 @@ class AVLTreeList(object):
     """
 
     def isSizeConsistent(self):
+        if self.size == 0:
+            return True
         return self.isSizeConsistentRec(self.getRoot())
 
     """Checks if sizes of the nodes in the subtree are consistent
@@ -657,6 +689,7 @@ class AVLTreeList(object):
                 return False
         # Size of x should be x.left.size + x.right.size + 1
         if x.size != (x.getLeft().size + x.getRight().size + 1):
+            print("Criminal Size -----> XXX"+str(x.size)+"XXXX  " + x.getValue() + "  XXXX"+str(x.size)+"XXXXXX")
             return False
         # Recursive calls
         return self.isSizeConsistentRec(x.getLeft()) and self.isSizeConsistentRec(x.getRight())
@@ -668,6 +701,8 @@ class AVLTreeList(object):
     """
 
     def isHeightConsistent(self):
+        if self.size == 0:
+            return True
         return self.isHeightConsistentRec(self.getRoot())
 
     """Checks if heights of the nodes in the subtree are consistent
@@ -684,6 +719,7 @@ class AVLTreeList(object):
             return True
         # Height of x should be maximum of children heights + 1
         if x.getHeight() != max(x.getLeft().getHeight(), x.getRight().getHeight()) + 1:
+            print("Criminal Height -----> XXX ["+str(x.height)+" ]XXXX  " + x.getValue() + "  XXXX[ "+str(x.height)+"] XXXXXX")
             return False
         # Recursive calls
         return self.isSizeConsistentRec(x.getLeft()) and self.isSizeConsistentRec(x.getRight())
@@ -698,10 +734,10 @@ class AVLTreeList(object):
         for i in range(1, root.size):
             if i != self.rank(self.retrieve_rec(i + 1)):
                 return False
-        # nodesList = self.nodes()
-        # for node in nodesList:
-        # if node != self.retrieve_rec(self.search(node)):
-        # return False
+        """nodesList = self.nodes()
+        for node in nodesList:
+        if node != self.retrieve_rec(self.search(node)):
+        return False"""
         return True
 
     """Returns a list of the nodes in the tree sorted by index in O(n)
@@ -731,28 +767,106 @@ class AVLTreeList(object):
         lst.append(x)
         self.nodesInOrder(x.getRight(), lst)
 
-    def checkInsert(self, lst, name):
+    def oneRandomInsert(self, lst, th, strings=True):
+        if not self.check("Before insert: "+str(th)):
+            print("Given tree is not correct")
+            return False
+        treeB = printree(self)
+        index = random.randint(0, self.getSize())
+        if strings:
+            type = random.randint(1, 2)
+        else:
+            type = 1
+        if type == 2:
+            lengthStr = random.randint(2, 7)
+            val = strGenerator(lengthStr)
+        else:
+            val = str(random.randint(0, 100))
+        self.insert(index, val)
+        if not self.check("Before insert: "+str(th)):
+            print("before")
+            for j in treeB:
+                print(j)
+            print("Tree after insert val # [" + val + "] # is not correct")
+            self.printTree("After")
+            return False
+        return True
+
+    def check1_i_d(self, l1):
+        for i in range(len(l1)):
+            #print("### TEST " + chr(i + 65) + " ###\n", l1)
+            # t1.printTree("Del " + chr(i + 65) + "[size=" + str(t1.size) + "]")
+            # arrayPrinter(t1)
+            val = self.retrieve(i)
+            #print("\n", chr(i + 65) + ".) Delete value #", val, "#")
+            self.delete(i)
+            del l1[i]
+            # print("After delete(", val, "):\n", l1)
+            #self.check("After delete(" + val + "):\n")
+            #self.printTree("AFTER DEL [" + chr(i + 65) + "]")
+            # arrayPrinter(t1)
+            s = True
+            for j in range(9):
+                if self.retrieve(j) != l1[j]:
+                    s = False
+                    #print("failed -> t1.retrieve(", j, ") != l1[", j, "] --> ", t1.retrieve(j), " != ", l1[j], "", )
+            self.insert(i, val)
+            l1.insert(i, val)
+            if s:
+                print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+                print("$$$$$$$$   ", chr(i + 65) + " IS A SUCCESS TEST !!!   $$$$$$$$")
+                print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            print("\n")
+        #self.printTree("Initial tree")
+        #print(l1)
+
+    def testInsert1(self, lst, name):
+        pos = self.check("Para check")
+        if not pos:
+            ls = self.nodes()
+            return False
+        self.insert()
+
+
+
+
+    """ Check if avl tree is handle random insert actions
+        :param [ tree, lst, name, limit of insertions]
+        """
+
+    def checkInsert(self, lst, name, limit=15):
         passTest = True
-        print("Check insert test (input=#", name, "#):   *(50 inserts)")
+        #print("Check insert test (input=#", name, "#):   *(50 inserts)")
         if self.size != len(lst):
             passTest = False
-            print("Size of the tree #", name, "# != len(lst) --> ", self.size, "!=", len(lst))
-        for i in range(50):
+            print("Size of given tree #", name, "# != len(lst) --> ", self.size, "!=", len(lst))
+        testAvl = self.check(name)
+        if not testAvl:
+            print("The criminal is ---->  XXXXXXX  " + val + "  XXXXXXX")
+            self.printTree("with criminal " + val + " (size= " + str(self.getSize()) + ")")
+        for i in range(limit):
             index = random.randint(0, self.getSize())
-            val = random.randint(65, 122)
+            val = str(random.randint(65, 122))
             self.insert(index, val)
             lst.insert(index, val)
             if self.size != len(lst):
                 passTest = False
-                print("Iter num. ", i + 1, ": Size of the tree #", name, "# != len(lst) --> ", self.size, "!=",
+                print("Iter num. ", i + 1, ": Size of the tree #", name + " insert("+str(i)+")", "# != len(lst) --> ", self.size, "!=",
                       len(lst))
-        self.check(name)
+            testAvl = self.check(name)
+            if not testAvl:
+                print("The criminal is ---->  XXXXXXX  " +val + "  XXXXXXX")
+                self.printTree("insert("+str(i)+") with criminal "+val+" (size= "+str(self.getSize())+")")
         for i in range(self.size):
             if self.retrieve(i) != lst[i]:
                 passTest = False
                 print("AVLtree[", i, "] != lst[", i, "] --> # ", self.retrieve(i), " != ", lst[i])
         if passTest:
             print("Good! AVL tree #", name, "# passed the test")
+        return passTest
+
+
+
 
     def checkDelete(self, lst, name):
         passTest = True
@@ -777,7 +891,7 @@ class AVLTreeList(object):
                     print("Criminal deletion --> AVL[", index, "]:", avlElem, "|| lst[", index, "]:", lstElem)
 
         if passTest:
-            print("Good! AVL tree #", name, "# passed the test")
+            print("###########################\nGood! AVL tree #", name, "# passed the test\n###################################")
 
     def printTree(self, name=""):
         print("AVL tree: ", name)
@@ -785,16 +899,32 @@ class AVLTreeList(object):
         for n in tLst:
             print(n)
 
+    def lstDetails(self):
+        nodesLst = self.nodes()
+        lstV = [nodesLst[j].value for j in range(len(nodesLst))]
+        lstS = [nodesLst[j].getSize() for j in range(len(nodesLst))]
+        lstH = [nodesLst[j].getHeight() for j in range(len(nodesLst))]
+        lstB = [nodesLst[j].BFcalc() for j in range(len(nodesLst))]
+        laN = lambda x: "None!" if x is None else x.getValue()
+        # laN2 =
+        lstD = [[laN(nodesLst[j].getLeft()), laN(nodesLst[j].getParent()), laN(nodesLst[j].getRight())] for j in
+                range(len(nodesLst))]
+        print(lstV)
+        print(lstS)
+        print(lstH)
+        print(lstB)
+        print(lstD)
+
     """ Lists generator
     :rType: (AVL tree , Array) 
     :return: AVL tree list , Array list
     """
 
 
-def listsGenerator():
+def listsGenerator(limit):
     t = AVLTreeList()
     lst = []
-    chooseLen = random.randint(0, 23)
+    chooseLen = random.randint(0, limit)
     for i in range(chooseLen):
         chooseType = random.randint(1, 3)  # 3-> string , 2 -> int, 1 -> char
         if chooseType == 3:
@@ -803,16 +933,17 @@ def listsGenerator():
         elif chooseType == 2:
             val = str(random.randint(0, 100))
         else:
-            val = chr(random.randint(65, 96))
+            val = chr(random.randint(97, 122))
         index = random.randint(0, i)
         t.insert(index, val)
         lst.insert(index, val)
+        t.check("random generator")
 
     return t, lst
 
 
 def strGenerator(len):
-    res = [chr(random.randint(65, 96)) for i in range(len)]
+    res = [chr(random.randint(65, 90)) for i in range(len)]
     return "".join(res)
 
 
@@ -866,43 +997,52 @@ def arrayPrinter(t):
     print("\nList of values in order: ", lv)
     print("List of branches in order: ", lb, "\n")
 
-    def check1_i_d(self, l1):
-        for i in range(8):
-            print("### TEST " + chr(i + 65) + " ###\n", l1)
-            # t1.printTree("Del " + chr(i + 65) + "[size=" + str(t1.size) + "]")
-            # arrayPrinter(t1)
-            val = t1.retrieve(i)
-            print("\n", chr(i + 65) + ".) Delete value #", val, "#")
-            t1.delete(i)
-            del l1[i]
-            # print("After delete(", val, "):\n", l1)
-            t1.check("After delete(" + val + "):\n")
-            t1.printTree("AFTER DEL [" + chr(i + 65) + "]")
-            # arrayPrinter(t1)
-            s = True
-            for j in range(9):
-                if t1.retrieve(j) != l1[j]:
-                    s = False
-                    print("failed -> t1.retrieve(", j, ") != l1[", j, "] --> ", t1.retrieve(j), " != ", l1[j], "", )
-            t1.insert(i, val)
-            l1.insert(i, val)
-            if s:
-                print("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-                print("$$$$$$$$   ", chr(i + 65) + " IS A SUCCESS TEST !!!   $$$$$$$$")
-                print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-            print("\n")
-        t1.printTree("Initial tree")
-        print(l1)
 
 def main():
     t1, t2, t3 = AVLTreeList(), AVLTreeList(), AVLTreeList()
     l1 = [str(i) for i in range(10)]  # [0, 1, 2, 3, ... , 9]
-    l2 = [str(i) for i in range(0, 20, 2)]  # [0, 2, 4, 6, ... , 18]
+    """l2 = [str(i) for i in range(0, 20, 2)]  # [0, 2, 4, 6, ... , 18]
     l3 = [chr(i) for i in range(65, 91)]  # ['a', 'b', 'c', ... , 'z']
     i1 = [t1.insert(i, str(i)) for i in range(10)]  # [0, 1, 2, 3, ... , 9]
     i2 = [t2.insert(i / 2, str(i)) for i in range(0, 20, 2)]  # [0, 2, 4, 6, ... , 18]
-    i3 = [t3.insert(i - 65, chr(i)) for i in range(65, 91)]  # ['a', 'b', 'c', ... , 'z']
-    t1.check1_i_d(l1)
+    i3 = [t3.insert(i - 65, chr(i)) for i in range(65, 91)]  # ['a', 'b', 'c', ... , 'z']"""
+    #t1.check1_i_d(l1)
+    #mistakesLst =[]
+    """for i in range(1):
+        t, l = listsGenerator(23)
+        if not t.checkInsert(l, "test "+str(i)):
+            mistakesLst.append([t,l])
+    t4 = AVLTreeList()
+    t4.insert(0,"114")
+    t4.insert(1,"118")
+    t4.insert(1,"107")
+    t4.printTree("last")
+    print(t4.root.size)"""
+    l2 = []
+    for i in range(500):
+        test = t2.oneRandomInsert(l2,i)
+        #t2.printTree()
+
+        if not test:
+            print("Falseeeeeeeeeeeeeeeeeeeeeeee")
+            """nodesLst = t2.nodes()
+            lstV = [nodesLst[j].value for j in range(len(nodesLst))]
+            lstS = [nodesLst[j].getSize() for j in range(len(nodesLst))]
+            lstH = [nodesLst[j].getHeight() for j in range(len(nodesLst))]
+            lstB = [nodesLst[j].BFcalc() for j in range(len(nodesLst))]
+            laN = lambda x: "None!" if x is None else x.getValue()
+            #laN2 =
+            lstD = [[laN(nodesLst[j].getLeft()), laN(nodesLst[j].getParent()), laN(nodesLst[j].getRight()) ] for j in range(len(nodesLst))]
+            print(lstV)
+            print(lstS)
+            print(lstH)
+            print(lstB)
+            print(lstD)"""
+            break
+
+
+
+
 
 #################################################################################################
 #################################################################################################
