@@ -212,7 +212,7 @@ class AVLTreeList(object):
     """
 
     def insert(self, i, val):
-        counter = 0
+        #counter = 0
         elem = self.initNode(val)             # Initial new node
         if self.empty():                      # Empty list
             self.root = elem
@@ -225,7 +225,8 @@ class AVLTreeList(object):
             pos = self.setNode(elem, i)    # Select(self, i+1) == self[i] ==> find the node located in index i
         elem.setParent(pos)
         self.size += 1
-        while pos is not None:
+        return self.fixUp(pos)
+        """while pos is not None:
             pos.size += 1
             pos.setHeight(pos.hUpdate())
             bf = pos.BFcalc()
@@ -251,7 +252,7 @@ class AVLTreeList(object):
             else:
                 pos = pos.parent
 
-        return counter
+        return counter"""
 
     def initNode(self, val):
         elem = AVLNode(val)
@@ -357,7 +358,8 @@ class AVLTreeList(object):
 
             else:
                 pos = pos.parent
-
+        if not insert and self.getSize() == 0:
+            self.root = None
         return counter
 
     """deletes the i'th item in the list
@@ -371,16 +373,9 @@ class AVLTreeList(object):
     def delete(self, i):
         if self.root is None:
             return -1
-        if i >= self.size:
-            print("fuckkkkkkk in input")
-            return -1
-        counter = 0
         self.size -= 1
         dNode = self.retrieve_rec(self.root, i + 1)
-        if dNode.getLeft() is None or dNode.getRight() is None:
-            self.printTree("delete fucked up becaue retrive")
-            print("del[]:", i)
-            return -1
+
         # case 1- dNode is a leaf
         if not (dNode.getRight().isRealNode() or dNode.getLeft().isRealNode()):
             pos = self.deleteLeaf(dNode)
@@ -400,34 +395,34 @@ class AVLTreeList(object):
 
         else:  # XOR(right(isReal(), left(isReal))
             pos = self.deleteXor(dNode)
-        #counter = self.fixUp(pos, False)
+        return self.fixUp(pos, False)
         # Fixing up to root
-        while pos is not None:
-            pos.size -= 1
-            pos.setHeight(pos.hUpdate())
-            bf = pos.BFcalc()
-            if bf > 1 or bf < -1:
-                temp = pos.parent
-                if bf == -2 and (pos.getRight().BFcalc() == -1 or pos.getRight().BFcalc() == 0):
-                    self.rotateLeft(pos, pos.getRight())
-                    counter += 1
-                elif bf == -2 and pos.getRight().BFcalc() == 1:
-                    self.rotateRight(pos.getRight(), pos.getRight().getLeft())
-                    self.rotateLeft(pos, pos.getRight())
-                    counter += 2
-                elif bf == 2 and (pos.getLeft().BFcalc() == 1 or pos.getLeft().BFcalc() == 0):
-                    self.rotateRight(pos, pos.getLeft())
-                    counter += 1
-                elif bf == 2 and pos.getLeft().BFcalc() == -1:
-                    self.rotateLeft(pos.getLeft(), pos.getLeft().getRight())
-                    self.rotateRight(pos, pos.getLeft())
-                    counter += 2
-                pos = temp
-            else:
-                pos = pos.parent
-        if self.size == 0:
-            self.root = None
-        return counter
+    """while pos is not None:
+        pos.size -= 1
+        pos.setHeight(pos.hUpdate())
+        bf = pos.BFcalc()
+        if bf > 1 or bf < -1:
+            temp = pos.parent
+            if bf == -2 and (pos.getRight().BFcalc() == -1 or pos.getRight().BFcalc() == 0):
+                self.rotateLeft(pos, pos.getRight())
+                counter += 1
+            elif bf == -2 and pos.getRight().BFcalc() == 1:
+                self.rotateRight(pos.getRight(), pos.getRight().getLeft())
+                self.rotateLeft(pos, pos.getRight())
+                counter += 2
+            elif bf == 2 and (pos.getLeft().BFcalc() == 1 or pos.getLeft().BFcalc() == 0):
+                self.rotateRight(pos, pos.getLeft())
+                counter += 1
+            elif bf == 2 and pos.getLeft().BFcalc() == -1:
+                self.rotateLeft(pos.getLeft(), pos.getLeft().getRight())
+                self.rotateRight(pos, pos.getLeft())
+                counter += 2
+            pos = temp
+        else:
+            pos = pos.parent
+    if self.size == 0:
+        self.root = None
+    return counter"""
 
     def deleteLeaf(self, dNode):
         dnp = dNode.getParent()
@@ -780,7 +775,14 @@ class AVLTreeList(object):
             print("Given tree for test { oneRandomInsert } is not correct")
             return False
         treeB = printree(self)
-        index = random.randint(0, self.getSize()-1)
+        if self.size == 0:
+            return True
+        else:
+            try:
+                index = random.randint(0, self.getSize()-1)
+            except:
+                print(self.size)
+
         val = self.retrieve(index)
         self.delete(index)
         del lst[index]
@@ -793,7 +795,25 @@ class AVLTreeList(object):
 
         return True
 
-        
+    def randomAct(self, lst, limit=100):
+        dec = []
+        delCounter = self.getSize()-1
+        for i in range(limit):
+            dec.append(random.randint(0, 1))
+        for b in dec:
+            if delCounter == 0 and b > 0:
+                one = self.oneRandomDelete(lst, str(i))
+                delCounter -= 1
+            else:
+                one = self.oneRandomInsert(lst, str(i))
+                delCounter += 1
+            if not one:
+                print("mostake in random act")
+                return False
+        return True
+
+
+
     """ Check if avl tree is handle random insert actions
         :param [ tree, lst, name, limit of insertions]
         """
@@ -936,14 +956,7 @@ def listsGenerator(limit):
     lst = []
     chooseLen = random.randint(0, limit)
     for i in range(chooseLen):
-        chooseType = random.randint(1, 3)  # 3-> string , 2 -> int, 1 -> char
-        if chooseType == 3:
-            lengthStr = random.randint(2, 7)
-            val = strGenerator(lengthStr)
-        elif chooseType == 2:
-            val = str(random.randint(0, 100))
-        else:
-            val = chr(random.randint(97, 122))
+        val = valGenerator()
         index = random.randint(0, i)
         t.insert(index, val)
         lst.insert(index, val)
@@ -951,6 +964,16 @@ def listsGenerator(limit):
 
     return t, lst
 
+def valGenerator():
+    chooseType = random.randint(1, 3)  # 3-> string , 2 -> int, 1 -> char
+    if chooseType == 3:
+        lengthStr = random.randint(2, 7)
+        val = strGenerator(lengthStr)
+    elif chooseType == 2:
+        val = str(random.randint(0, 100))
+    else:
+        val = chr(random.randint(97, 122))
+    return val
 
 def strGenerator(len):
     res = [chr(random.randint(65, 90)) for i in range(len)]
@@ -1022,9 +1045,9 @@ def main():
             print("FALSE")
     for i in range(100):
         t, l = listsGenerator(10)
-        if not t.checkDeleteRandomly(l, str(i)):
-            t.lstDetails()
-            t.printTree("False")
+        if not t.randomAct(l,100):
+            print("shit----> Random Act")
+
 
 
 
