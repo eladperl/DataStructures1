@@ -799,11 +799,16 @@ class AVLTreeList(object):
         dec = []
         delCounter = self.getSize()-1
         for i in range(limit):
-            dec.append(random.randint(0, 1))
+            dec.append(random.randint(1, 8))
         for b in dec:
-            if delCounter == 0 and b > 0:
-                one = self.oneRandomDelete(lst, str(i))
-                delCounter -= 1
+            if delCounter > 0 and b % 2 == 1:
+                for i in range(b):
+                    if delCounter > 0 :
+                        one = self.oneRandomDelete(lst, str(i))
+                        delCounter -= 1
+                    else:
+                        one = self.oneRandomInsert(lst, str(i))
+                        delCounter += 1
             else:
                 one = self.oneRandomInsert(lst, str(i))
                 delCounter += 1
