@@ -212,10 +212,9 @@ class AVLTreeList(object):
     """
 
     def insert(self, i, val):
-        #counter = 0
         elem = self.initNode(val)             # Initial new node
         if self.empty():                      # Empty list
-            self.root = elem
+            self.root, self.first, self.last = elem#, elem, elem
             self.size += 1
             return 0
 
@@ -269,9 +268,10 @@ class AVLTreeList(object):
         while pos.getRight().getHeight() != -1:
             pos = pos.right
         pos.setRight(elem)
+        self.last = elem
         return pos
 
-    def setNode(self, elem, i, pr=False):
+    def setNode(self, elem, i):
         pos = self.retrieve_rec(self.root, i + 1, pr)
         if not pos.left.isRealNode():  # if pos.left is vr
             pos.setLeft(elem)
@@ -280,6 +280,8 @@ class AVLTreeList(object):
             while pos.right.getHeight() != -1:
                 pos = pos.right
             pos.setRight(elem)
+        if i == 0:
+            self.first = elem
         return pos
 
     """ t.l  or t.right          
@@ -333,7 +335,8 @@ class AVLTreeList(object):
     def fixUp(self, pos, insert=True):
         counter = 0
         while pos is not None:
-            pos.size += (lambda act: 1 if insert else -1)(insert)
+            #pos.size += (lambda act: 1 if insert else -1)(insert)
+            pos.setSize(pos.sUpdate())
             pos.setHeight(pos.hUpdate())
             bf = pos.BFcalc()
             if bf > 1 or bf < -1:
@@ -375,7 +378,6 @@ class AVLTreeList(object):
             return -1
         self.size -= 1
         dNode = self.retrieve_rec(self.root, i + 1)
-
         # case 1- dNode is a leaf
         if not (dNode.getRight().isRealNode() or dNode.getLeft().isRealNode()):
             pos = self.deleteLeaf(dNode)
@@ -426,6 +428,10 @@ class AVLTreeList(object):
 
     def deleteLeaf(self, dNode):
         dnp = dNode.getParent()
+        if dNode is self.last():
+            self.last = dnp
+        if dNode is self.first():
+            self.first = dnp
         if dNode is not self.root:
             if dnp.getRight() is dNode:
                 dnp.setRight(dNode.getRight())
@@ -435,6 +441,7 @@ class AVLTreeList(object):
                 dNode.getLeft().setParent(dnp)
         else:
             self.root = None
+
         return dnp
 
     def deleteXor(self, dNode):
@@ -495,7 +502,7 @@ class AVLTreeList(object):
     """
 
     def first(self):
-        return None
+        return self.first
 
     """returns the value of the last item in the list
 
@@ -504,7 +511,7 @@ class AVLTreeList(object):
     """
 
     def last(self):
-        return None
+        return self.last
 
     """returns an array representing list 
 
@@ -512,8 +519,22 @@ class AVLTreeList(object):
     @returns: a list of strings representing the data structure
     """
 
+    """real l-to-a func"""
+
     def listToArray(self):
+        res = [i for i in range(self.size)]
+        ### Travel in tree and then add elements by rank as indexes ###
+        res1 = []
+        return AVLTreeList.ltoa(self, self.root, res1)
+
         return res
+
+    def ltoa(self, node, res):
+        if node is None:
+            return
+        AVLTreeList.ltoa(self, node.left, res)
+        res.append(node.value)
+        AVLTreeList.ltoa(self, node.right, res)
 
     """returns the size of the list 
 
@@ -535,10 +556,48 @@ class AVLTreeList(object):
     """
 
     def split(self, i):
-        return None
+        res = []
+        node = self.retNode(self.getRoot(), i)
+        leftT = self.createTreefromNode(node.getLeft())
+        rightT = self.createTreefromNode(node.getRight())
+        val = node.getValue()
+        parent = node.getParent()
+        while parent != None:
+            leftT.printTree("current left")
+            rightT.printTree("current Right")
+            if parent.getRight() == node:
+                node = parent
+                parent = node.getParent()
+                leftSubTree = self.createTreefromNode(node.getLeft())
+                leftT = self.join(leftSubTree, node, leftT)
+            else:
+                node = parent
+                parent = node.getParent()
+                rightSubTree = self.createTreefromNode(node.getRight())
+                rightT = self.join(rightT, node, rightSubTree)
+
+        res.append(leftT)
+        res.append(val)
+        res.append(rightT)
+        return res
+
+    def createTreefromNode(self, node : AVLNode):
+        Tree = AVLTreeList()
+        node.setParent(None)
+        Tree.setRoot(node)
+        Tree.setSize(node.getSize())
+        return Tree
+
+    def retNode(self, r, i):
+        smaller = (r.getLeft()).getSize()
+        if smaller < i:
+            return self.retNode(r.getRight(), i - smaller - 1)
+        elif smaller > i:
+            return self.retNode(r.getLeft(), i)
+        else:
+            return r
 
     """concatenates lst to self
-
     @type lst: AVLTreeList
     @param lst: a list to be concatenated after self
     @rtype: int
@@ -546,10 +605,90 @@ class AVLTreeList(object):
     """
 
     def concat(self, lst):
-        return None
+        height_l = self.getRoot().getHeight()
+        height_r = lst.getRoot().getHeight()
+        x = self.getRightMost(self.getRoot())
+        self.delete(self.length() - 1)
+        x.setParent(None)
+        joinedTrees = self.join(self, x, lst)
+        self.setRoot(joinedTrees.getRoot())
+        self.setSize(joinedTrees.getSize())
+        return abs(height_l - height_r)
+
+    def getRightMost(self, node):
+        while node.getRight().isRealNode():
+            node = node.getRight()
+        return node
+
+    def getLeftMost(self, node):
+        while node.getLeft().isRealNode():
+            node = node.getLeft()
+        return node
+
+
+    def join(self, lst1, x: AVLNode, lst2):
+
+        if lst1.empty() and lst2.empty():
+            lst2.insert(lst2.getSize(), x.getValue())
+            return lst2
+        if lst1.empty():
+            lst2.insert(0 , x.getValue())
+            return lst2
+        if lst2.empty():
+            lst1.insert(lst1.getSize() , x.getValue())
+            return lst1
+
+        lst1Height = lst1.getRoot().getHeight()
+        lst2Height = lst2.getRoot().getHeight()
+        diff = abs(lst1Height-lst2Height)
+
+        if lst1Height == lst2Height or diff == 1:#no need to rebalance
+            x.setLeft(lst1.getRoot())
+            x.setRight(lst2.getRoot())
+            self.nodeHandSupdate(x)
+            newT = self.createTreefromNode(x)
+            return newT
+
+        if lst1Height < lst2Height:
+            b = self.reachHeightLeft(lst2, lst1Height)
+            x.setLeft(lst1.getRoot())
+            x.setRight(b)
+            self.nodeHandSupdate(x)
+            c = b.getParent()
+            x.setParent(c)
+            c.setLeft(x)
+            self.nodeHandSupdate(c)
+            self.fixUp(c, False)
+        else:
+            b = self.reachHeightRight(lst1, lst2Height)
+            x.setLeft(b)
+            x.setRight(lst2.getRoot())
+            self.nodeHandSupdate(x)
+            c = b.getParent()
+            x.setParent(c)
+            c.setRight(x)
+            self.nodeHandSupdate(c)
+            self.fixUp(c, False)
+        if lst1Height < lst2Height:
+            return lst2
+        else:
+            return lst1
+
+    def nodeHandSupdate(self, node:AVLNode):
+        node.setSize(node.getLeft().getSize() + node.getRight().getSize() + 1)
+        node.setHeight(max(node.getLeft().getHeight(), node.getRight().getHeight()) + 1)
+    def reachHeightLeft(self, tree, h):
+        node = tree.getRoot()
+        while node.getHeight() > h:
+            node = node.getLeft()
+        return node
+    def reachHeightRight(self, tree, h):
+        node = tree.getRoot()
+        while node.getHeight() > h:
+            node = node.getRight()
+        return node
 
     """searches for a *value* in the list
-
     @type val: str
     @param val: a value to be searched
     @rtype: int
@@ -557,13 +696,17 @@ class AVLTreeList(object):
     """
 
     def search(self, val):
-        return None
+        node = self.root
+        return self.search_rec(self, node, val)
 
-    """returns the root of the tree representing the list
-
-    @rtype: AVLNode
-    @returns: the root, None if the list is empty
-    """
+    def search_rec(self, node, val):
+        if node.getValue() == val:
+            return -1 #maybe 0??
+        smaller = node.getLeft().size()
+        if node.getValue() < val:
+            return node.getLeft().getSize() + self.search_rec(node.getRight(), val)
+        else:
+            return self.search_rec(node.getLeft(), val)
 
     def getRoot(self):
         if self.empty():
@@ -571,6 +714,16 @@ class AVLTreeList(object):
         return self.root
 
     # More functions
+
+    def setRoot(self, root: AVLNode):
+        self.root = root
+        if root != None:
+            self.size = root.getSize()
+
+
+    def setSize(self, n):
+        self.size = n
+
     def getSize(self):
         return self.size
 
@@ -705,13 +858,13 @@ class AVLTreeList(object):
 
     def isRankConsistent(self):
         root = self.getRoot()
-        for i in range(1, root.size):
-            if i != self.rank(self.retrieve_rec(i + 1)):
+        #for i in range(1, root.size):
+            #if i != self.rank(self.retrieve_rec(i + 1)):
+                #return False
+        nodesList = self.nodes()
+        for node in range(len(nodesList)):   # new one
+            if self.select(node) is not nodesList[i]:
                 return False
-        """nodesList = self.nodes()
-        for node in nodesList:
-        if node != self.retrieve_rec(self.search(node)):
-        return False"""
         return True
 
     """Returns a list of the nodes in the tree sorted by index in O(n)
@@ -736,7 +889,7 @@ class AVLTreeList(object):
     @param lst: The list
     """
 
-    def nodesInOrder(self, x, lst, pr=False):
+    def nodesInOrder(self, x, lst):
         if not x.isRealNode():
             return
         self.nodesInOrder(x.getLeft(), lst)
@@ -1044,6 +1197,7 @@ def main():
     i1 = [t1.insert(i, str(i)) for i in range(10)]  # [0, 1, 2, 3, ... , 9]
     i2 = [t2.insert(i / 2, str(i)) for i in range(0, 20, 2)]  # [0, 2, 4, 6, ... , 18]
     i3 = [t3.insert(i - 65, chr(i)) for i in range(65, 91)]  # ['a', 'b', 'c', ... , 'z']"""
+
     for i in range(10000):
         t,l = listsGenerator(20)
         if not t.checkDelByInOrder(l):
