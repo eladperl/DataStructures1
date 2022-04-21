@@ -185,25 +185,6 @@ class AVLTreeList(object):
         return self.retrieve_rec(self.getRoot(), i + 1).value
 
     def retrieve_rec(self, node, i, printNodes=False, counter=1):
-        """if i > node.getSize():
-            print("NOT POSSIBLE --> i = "+str(i)+" size == " + str(node.getSize()))
-        if printNodes:
-            print("Step: ", counter)
-            print("Node Value: ", node.getValue())
-            print("Rank: ", i)
-            print("###########\n")
-            if not isinstance(node, AVLNode):
-                print("Error: node is not an AVL Node object")                    ### DELETE AFTER ###
-            if not node.isRealNode():
-                print("Error: node is a VR node")                                  ### DELETE AFTER ###
-            if not isinstance(node.getLeft(), AVLNode):
-                if node.getParent().getLeft() is node:
-                    print("node is left child")
-                else:
-                    print("node is right child")
-                print("left is None ->", [node.getParent().getLeft().getValue(),node.getParent().getValue(),node.getParent().getRight().getValue()])
-                print("looking for--> rank("+str(i)+")")"""
-
         rank = node.getLeft().getSize() + 1
         if rank == i:
             return node
@@ -224,15 +205,12 @@ class AVLTreeList(object):
     """
 
     def append(self, val):
-        self.insert(self.length(), val)
+        return self.insert(self.length(), val)
 
     def insert(self, i, val):
         elem = self.initNode(val)             # Initial new node
         if self.empty():                      # Empty list
-            self.setRoot(elem)
-            self.setFirst(elem)
-            self.setLast(elem)
-            self.setSize(self.getSize()+1)
+            self.setRoot(elem), self.setFirst(elem), self.setLast(elem), self.setSize(self.getSize()+1)
             return 0
 
         if i == self.length():                  # i == len(lst)
@@ -241,7 +219,7 @@ class AVLTreeList(object):
             pos = self.setNode(elem, i)    # Select(self, i+1) == self[i] ==> find the node located in index i
         elem.setParent(pos)
         self.size += 1
-        return self.fixUp(pos)
+        return self.fixUp(pos) + 1
 
 
 
@@ -390,6 +368,8 @@ class AVLTreeList(object):
                 pos = self.deleteXor(sNode)
             if pos is dNode:  # Edge case- Successor(dNode) == sNode
                 pos = sNode
+                if self.getLast() is dNode:
+                    self.setLast(pos)
             self.exchangeNodes(dNode, sNode)  # set sNode in dNode location
 
         else:  # XOR(right(isReal(), left(isReal))
@@ -532,14 +512,14 @@ class AVLTreeList(object):
 
     def split(self, i):
         res = []
+        firstSelf = self.getFirst()
+        lastSelf = self.getLast()
         node = self.retNode(self.getRoot(), i)
         leftT = self.createTreefromNode(node.getLeft())
         rightT = self.createTreefromNode(node.getRight())
         val = node.getValue()
         parent = node.getParent()
         while parent != None:
-            #leftT.printTree("current left")
-            #rightT.printTree("current Right")
             if parent.getRight() == node:
                 node = parent
                 parent = node.getParent()
@@ -551,10 +531,13 @@ class AVLTreeList(object):
                 rightSubTree = self.createTreefromNode(node.getRight())
                 rightT = self.join(rightT, node, rightSubTree)
 
-        leftT.setFirst(self.getFirst())
-        leftT.setLast(self.getRightMost(leftT.getRoot()))
-        rightT.setFirst(self.getLeftMost(rightT.getRoot()))
-        rightT.setLast(self.getLast())
+        # Updating first and last in each tree
+        if leftT.getRoot() is not None:
+            leftT.setFirst(firstSelf)
+            leftT.setLast(self.getRightMost(leftT.getRoot()))
+        if rightT.getRoot() is not None:
+            rightT.setFirst(self.getLeftMost(rightT.getRoot()))
+            rightT.setLast(lastSelf)
         res.append(leftT)
         res.append(val)
         res.append(rightT)
@@ -576,6 +559,13 @@ class AVLTreeList(object):
         else:
             return r
 
+    """concatenates lst to self
+    @type lst: AVLTreeList
+    @param lst: a list to be concatenated after self
+    @rtype: int
+    @returns: the absolute value of the difference between the height of the AVL trees joined
+    """
+
     def concat(self, lst):
         if self.getRoot() is None and lst.getRoot() is None:
             return 0  # both empty trees
@@ -585,10 +575,10 @@ class AVLTreeList(object):
             self.setSize(lst.getSize())
             self.setFirst(lst.getFirst())
             self.setLast(lst.getLast())
-            return height_r
+            return height_r + 1
         elif lst.getRoot() is None:
             height_l = self.getRoot().getHeight()
-            return height_l
+            return height_l + 1
         height_l = self.getRoot().getHeight()
         height_r = lst.getRoot().getHeight()
         self.setLast(lst.getLast())
@@ -601,6 +591,13 @@ class AVLTreeList(object):
         return abs(height_l - height_r)
 
     def getRightMost(self, node):
+        """if not isinstance(node, AVLNode):
+            self.printTree("node not a node")
+            return node
+        if not isinstance(node.getRight(), AVLNode):
+            self.printTree("getRight")
+            print(node.getValue())
+            return node"""
         while node.getRight().isRealNode():
             node = node.getRight()
         return node
@@ -676,6 +673,8 @@ class AVLTreeList(object):
 
 
     def search(self, val):
+        if self.empty():
+            return -1
         node = self.getRoot()
         res = self.search_rec(node, val)
         if res == -1:
@@ -1202,30 +1201,15 @@ def main():
     i3 = [t3.insert(i - 65, chr(i)) for i in range(65, 91)]  # ['a', 'b', 'c', ... , 'z']
     #t3.printTree()
     t4 = AVLTreeList()
-    t4.append("e"), t4.append("g")
+    t4.append("e")
+    t4.append("g")
     t4.insert(0,"c"), t4.insert(2,"f")
     t4.append("i"), t4.insert(1, "d")
     t4.insert(0, "a"), t4.insert(6,"h")
     t4.insert(1, "b")
     t4.printTree()
+    print(t4.last(), t4.first())
     lst4 = ["a", "b", "c", "d", "e", "f", "g", "h","i"]
-    #print(t4.search("a"))
-    for i in lst4:
-        print(t4.search(i))
-    """for i in range(10000):
-        t,l = listsGenerator(20)
-        if not t.checkDelByInOrder(l):
-            print("FALSE")
-    for i in range(100):
-        t, l = listsGenerator(10)
-        if not t.randomAct(l,100):
-            print("shit----> Random Act")"""
-
-
-
-
-
-
 
 
 #################################################################################################
@@ -1309,7 +1293,4 @@ def rightspace(row):
 if __name__ == "__main__":
     main()
 
-######################################################################################################
-########################################      Folders       ##########################################
-######################################################################################################
 
