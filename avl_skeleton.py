@@ -20,8 +20,6 @@ class AVLNode(object):
         self.right = None
         self.parent = None
         self.height = height
-
-        ### More fields ###
         self.size = size
 
     """returns the left child
@@ -130,7 +128,6 @@ class AVLNode(object):
     def setSize(self, s):
         self.size = s
 
-
     def BFcalc(self):
         return (lambda n: n.getLeft().getHeight() - n.getRight().getHeight())(self)
 
@@ -155,9 +152,6 @@ class AVLTreeList(object):
         self.size = 0
         self.firstItem = None
         self.lastItem = None
-
-    def getTreeHeight(self):
-        return self.root.getHeight()
 
     """returns whether the list is empty
 
@@ -732,6 +726,18 @@ class AVLTreeList(object):
     def rank(self, val):
         return self.search(val)
 
+    def getTreeHeight(self):
+        if self.length() == 0:
+            return -1
+        return self.getTreeHeightRec(self.getRoot())
+
+    def getTreeHeightRec(self, node):
+        if not node.isRealNode():
+            return -1
+        right = self.getTreeHeightRec(node.getRight())
+        left = self.getTreeHeightRec(node.getLeft())
+        return max(right, left) + 1
+
     ######################################## TEST ######################################################################
     ##################################### INSIDE CLASS #################################################################
 
@@ -1208,7 +1214,7 @@ def main():
     t4.insert(0, "a"), t4.insert(6,"h")
     t4.insert(1, "b")
     t4.printTree()
-    print(t4.last(), t4.first())
+    print(t4.getTreeHeight())
     lst4 = ["a", "b", "c", "d", "e", "f", "g", "h","i"]
 
 
